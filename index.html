@@ -16,15 +16,85 @@
             --text-dark: #2C3E50;
         }
 
-        /* [Bestehende CSS-Stile hier einfügen] */
-
-        .swipe-container {
-            position: relative;
-            overflow: hidden;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .swipe-content {
-            transition: transform 0.3s;
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 2px solid var(--secondary-blue);
+        }
+
+        h2 {
+            color: var(--primary-blue);
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        select, input, textarea, button {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--secondary-blue);
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 8px 0;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--accent-green);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(4,217,79,0.1);
+        }
+
+        button {
+            background: var(--accent-green);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #03C245;
+        }
+
+        .medication-entry, .symptom-entry {
+            background: rgba(220,234,242,0.3);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-blue);
+            position: relative;
+        }
+
+        .swipe-container {
+            overflow: hidden;
+            position: relative;
         }
 
         .delete-btn {
@@ -40,166 +110,280 @@
             transition: right 0.3s;
         }
 
-        .day-section {
-            margin: 20px 0;
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-        }
-
         .edit-btn {
+            position: absolute;
+            right: 15px;
+            top: 15px;
             background: var(--accent-yellow);
             color: var(--text-dark);
             border: none;
             padding: 5px 10px;
             border-radius: 5px;
-            margin-left: 10px;
+        }
+
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            display: block;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 15px; }
+            .section { padding: 20px; }
         }
     </style>
 </head>
 <body>
-    <!-- [Bestehende HTML-Struktur hier einfügen] -->
+    <!-- Medikamenten-Tracker -->
     <div class="section">
-        <button onclick="exportPDF()" style="margin-top:20px;">📄 PDF Export</button>
+        <h2>💊 Medikation</h2>
+        <div class="input-group">
+            <select id="medSelection">
+                <option value="">Medikament auswählen</option>
+                <option>Nurofen Sirup 100ml</option>
+                <option>Ibuprofen Flüssigkeit 200ml</option>
+                <option>Paracetamol Suspension 100ml</option>
+                <option>Nasentropfen 5ml</option>
+                <option>Hustensaft 120ml</option>
+                <option>Fiebersaft 150ml</option>
+                <option>Halstabletten 24St</option>
+                <option>Inhalationslösung 100ml</option>
+                <option>Homöopathische Globuli 10g</option>
+                <option>Anderes Medikament...</option>
+            </select>
+        </div>
+
+        <div class="input-row">
+            <div class="input-group">
+                <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
+            </div>
+            <div class="input-group">
+                <input type="time" id="time">
+            </div>
+            <div class="input-group">
+                <select id="interval">
+                    <option value="4">4 Stunden</option>
+                    <option value="6">6 Stunden</option>
+                    <option value="8" selected>8 Stunden</option>
+                    <option value="12">12 Stunden</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="logMedication()">Medikation speichern</button>
+        <div id="medicationHistory"></div>
+    </div>
+
+    <!-- Symptom-Tracker -->
+    <div class="section">
+        <h2>🌡 Symptome</h2>
+        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
+        <button onclick="addSymptom()">Symptom erfassen</button>
+        <div id="symptomsList"></div>
+    </div>
+
+    <!-- PDF Export -->
+    <div class="section">
+        <button onclick="exportPDF()">📄 PDF Export erstellen</button>
     </div>
 
     <script>
-        // [Bestehende JavaScript-Funktionen hier einfügen]
+        let medicationHistory = JSON.parse(localStorage.getItem('medicationHistory')) || [];
+        let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
+        let timerId = null;
 
-        // Neue Funktionen
-        function setupSwipe() {
-            let startX;
-            document.querySelectorAll('.swipe-container').forEach(container => {
-                let isDelete = false;
-                
-                container.addEventListener('touchstart', e => {
-                    startX = e.touches[0].clientX;
-                });
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            updateViews();
+            setupSwipe();
+        });
 
-                container.addEventListener('touchmove', e => {
-                    if (!startX) return;
-                    const diff = e.touches[0].clientX - startX;
-                    if (diff < -50 && !isDelete) {
-                        container.querySelector('.delete-btn').style.right = '0';
-                        isDelete = true;
-                    }
-                });
-
-                container.addEventListener('touchend', () => {
-                    startX = null;
-                    if (isDelete) {
-                        setTimeout(() => {
-                            const id = container.dataset.id;
-                            if (container.classList.contains('med-entry')) {
-                                medicationHistory = medicationHistory.filter(e => e.id != id);
-                                localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
-                            } else {
-                                symptoms = symptoms.filter(e => e.id != id);
-                                localStorage.setItem('symptoms', JSON.stringify(symptoms));
-                            }
-                            updateViews();
-                        }, 300);
-                    }
-                    isDelete = false;
-                });
-            });
+        function updateViews() {
+            updateMedHistory();
+            updateSymptoms();
+            checkTimers();
         }
 
-        function editEntry(type, id) {
-            const entry = type === 'med' 
-                ? medicationHistory.find(e => e.id === id)
-                : symptoms.find(e => e.id === id);
+        // Medikationsfunktionen
+        function logMedication() {
+            const med = document.getElementById('medSelection').value;
+            const dose = document.getElementById('dose').value.trim();
+            const time = document.getElementById('time').value;
 
-            const newVal = prompt('Bearbeiten:', type === 'med' 
-                ? `${entry.med} | ${entry.dose}`
-                : entry.desc);
+            if (!med || !dose || !time) {
+                alert('Bitte alle Felder ausfüllen');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                med: med,
+                dose: dose,
+                time: new Date().toISOString(),
+                interval: parseInt(document.getElementById('interval').value)
+            };
+
+            medicationHistory.push(entry);
+            localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
+            updateViews();
+            clearInputs();
+        }
+
+        function updateMedHistory() {
+            const historyDiv = document.getElementById('medicationHistory');
+            historyDiv.innerHTML = medicationHistory.map(entry => `
+                <div class="swipe-container">
+                    <div class="medication-entry">
+                        <button class="edit-btn" onclick="editMed(${entry.id})">✎</button>
+                        <strong>${entry.med}</strong><br>
+                        ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE')}<br>
+                        <span class="timestamp">Nächste Gabe: ${calculateNextDose(entry)}</span>
+                    </div>
+                    <div class="delete-btn" onclick="deleteMed(${entry.id})">Löschen</div>
+                </div>
+            `).join('');
+        }
+
+        function calculateNextDose(entry) {
+            const nextDose = new Date(entry.time);
+            nextDose.setHours(nextDose.getHours() + entry.interval);
+            return nextDose.toLocaleString('de-DE');
+        }
+
+        // Symptomfunktionen
+        function addSymptom() {
+            const desc = document.getElementById('symptomInput').value.trim();
+            if (!desc) return;
+
+            const entry = {
+                id: Date.now(),
+                desc: desc,
+                time: new Date().toISOString()
+            };
+
+            symptoms.push(entry);
+            localStorage.setItem('symptoms', JSON.stringify(symptoms));
+            updateSymptoms();
+            document.getElementById('symptomInput').value = '';
+        }
+
+        function updateSymptoms() {
+            const list = document.getElementById('symptomsList');
+            list.innerHTML = symptoms.map(entry => `
+                <div class="swipe-container">
+                    <div class="symptom-entry">
+                        <button class="edit-btn" onclick="editSymptom(${entry.id})">✎</button>
+                        <strong>${new Date(entry.time).toLocaleString('de-DE')}</strong><br>
+                        ${entry.desc}
+                    </div>
+                    <div class="delete-btn" onclick="deleteSymptom(${entry.id})">Löschen</div>
+                </div>
+            `).join('');
+        }
+
+        // Löschfunktionen
+        function deleteMed(id) {
+            medicationHistory = medicationHistory.filter(e => e.id !== id);
+            localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
+            updateViews();
+        }
+
+        function deleteSymptom(id) {
+            symptoms = symptoms.filter(e => e.id !== id);
+            localStorage.setItem('symptoms', JSON.stringify(symptoms));
+            updateViews();
+        }
+
+        // Bearbeitungsfunktionen
+        function editMed(id) {
+            const entry = medicationHistory.find(e => e.id === id);
+            const newMed = prompt('Medikament:', entry.med);
+            const newDose = prompt('Dosis:', entry.dose);
             
-            if (newVal) {
-                if (type === 'med') {
-                    const [med, dose] = newVal.split('|');
-                    entry.med = med.trim();
-                    entry.dose = dose.trim();
-                } else {
-                    entry.desc = newVal;
-                }
-                localStorage.setItem(type === 'med' ? 'medicationHistory' : 'symptoms', 
-                    JSON.stringify(type === 'med' ? medicationHistory : symptoms));
+            if (newMed && newDose) {
+                entry.med = newMed;
+                entry.dose = newDose;
+                localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
                 updateViews();
             }
         }
 
-        function exportPDF() {
-            const doc = new jspdf.jsPDF();
-            let yPos = 20;
+        function editSymptom(id) {
+            const entry = symptoms.find(e => e.id === id);
+            const newDesc = prompt('Symptom:', entry.desc);
+            
+            if (newDesc) {
+                entry.desc = newDesc;
+                localStorage.setItem('symptoms', JSON.stringify(symptoms));
+                updateViews();
+            }
+        }
 
-            // Medikationshistorie
+        // PDF Export
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Medikationsdaten
             doc.setFontSize(16);
-            doc.text('Medikationsprotokoll', 20, yPos);
-            yPos += 15;
+            doc.text('Medikationsprotokoll', 20, 20);
+            let y = 30;
             
             medicationHistory.forEach(entry => {
                 doc.setFontSize(12);
-                doc.text(`${new Date(entry.time).toLocaleDateString('de-DE')} - ${entry.med}: ${entry.dose}`, 20, yPos);
-                yPos += 10;
+                doc.text(
+                    `${new Date(entry.time).toLocaleDateString('de-DE')}: 
+                    ${entry.med} - ${entry.dose}`, 
+                    20, y
+                );
+                y += 10;
             });
 
-            // Symptome
-            yPos += 10;
+            // Symptomdaten
+            y += 15;
             doc.setFontSize(16);
-            doc.text('Symptomverlauf', 20, yPos);
-            yPos += 15;
+            doc.text('Symptomverlauf', 20, y);
+            y += 10;
             
             symptoms.forEach(entry => {
                 doc.setFontSize(12);
-                doc.text(`${new Date(entry.time).toLocaleDateString('de-DE')}: ${entry.desc}`, 20, yPos);
-                yPos += 10;
+                doc.text(
+                    `${new Date(entry.time).toLocaleDateString('de-DE')}: 
+                    ${entry.desc}`, 
+                    20, y
+                );
+                y += 10;
             });
 
             doc.save('Gesundheitsprotokoll.pdf');
         }
 
-        // Update der Anzeigefunktionen
-        function updateMedHistory() {
-            const historyDiv = document.getElementById('medicationHistory');
-            historyDiv.innerHTML = medicationHistory.map(entry => `
-                <div class="swipe-container med-entry" data-id="${entry.id}">
-                    <div class="swipe-content">
-                        <div class="medication-entry">
-                            <strong>${entry.med}</strong>
-                            <button class="edit-btn" onclick="editEntry('med', '${entry.id}')">✎</button>
-                            <br>${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE')}
-                            <span class="timestamp">Nächste Gabe: ${new Date(entry.nextDose).toLocaleString('de-DE')}</span>
-                        </div>
-                    </div>
-                    <div class="delete-btn">Löschen</div>
-                </div>
-            `).join('');
-            setupSwipe();
+        // Hilfsfunktionen
+        function clearInputs() {
+            document.getElementById('medSelection').value = '';
+            document.getElementById('dose').value = '';
+            document.getElementById('time').value = '';
         }
 
-        function updateSymptoms() {
-            const list = document.getElementById('symptomsList');
-            list.innerHTML = symptoms.map(s => `
-                <div class="swipe-container" data-id="${s.id}">
-                    <div class="swipe-content">
-                        <div class="symptom-entry">
-                            <strong>${new Date(s.time).toLocaleString('de-DE')}</strong>
-                            <button class="edit-btn" onclick="editEntry('symptom', '${s.id}')">✎</button>
-                            <br>${s.desc}
-                        </div>
-                    </div>
-                    <div class="delete-btn">Löschen</div>
-                </div>
-            `).join('');
-            setupSwipe();
-        }
+        function setupSwipe() {
+            let touchStartX = 0;
+            
+            document.querySelectorAll('.swipe-container').forEach(container => {
+                container.addEventListener('touchstart', e => {
+                    touchStartX = e.touches[0].clientX;
+                });
 
-        // Initialisierung mit IDs
-        document.addEventListener('DOMContentLoaded', () => {
-            medicationHistory = medicationHistory.map(e => ({...e, id: e.id || Date.now().toString()}));
-            symptoms = symptoms.map(e => ({...e, id: e.id || Date.now().toString()}));
-            updateViews();
-        });
+                container.addEventListener('touchend', e => {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    if (touchStartX - touchEndX > 50) {
+                        container.querySelector('.delete-btn').style.transform = 'translateX(-80px)';
+                    } else {
+                        container.querySelector('.delete-btn').style.transform = 'translateX(0)';
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
