@@ -11,58 +11,76 @@
             padding: 10px;
             max-width: 800px;
             margin: 0 auto;
+            background: #f5f5f5;
         }
         .section {
             margin-bottom: 20px;
             padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         select, button, input[type="text"], textarea {
             margin: 5px 0;
-            padding: 10px;
-            width: 95%;
+            padding: 12px;
+            width: 100%;
             font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
         }
         button {
-            background: #007bff;
+            background: #4CAF50;
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:active {
+            background: #45a049;
         }
         .timer {
-            font-size: 1.3em;
+            font-size: 1.5em;
             color: #2c3e50;
-            margin: 15px 0;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            text-align: center;
         }
         .entry, .task {
-            background-color: #f9f9f9;
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 4px;
+            background-color: #fff;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #eee;
             display: flex;
             align-items: center;
         }
         .task input[type="checkbox"] {
-            margin-right: 10px;
-            transform: scale(1.3);
+            margin-right: 15px;
+            transform: scale(1.4);
         }
         .checklist-input {
             display: flex;
-            gap: 5px;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        small {
+            color: #666;
+            margin-left: auto;
+            font-size: 0.9em;
         }
         @media (min-width: 600px) {
             body { padding: 20px; }
-            select, input[type="text"], textarea { width: auto; }
+            .checklist-input { flex-wrap: nowrap; }
         }
     </style>
 </head>
 <body>
     <!-- Medikamenten-Timer -->
     <div class="section">
-        <h2>Medikamenten-Timer</h2>
-        <input type="text" id="medName" placeholder="Medikamentenname">
+        <h2>⏱ Medikamenten-Timer</h2>
+        <input type="text" id="medName" placeholder="Medikamentenname (z.B. Ibuprofen)">
         <select id="interval">
             <option value="1">1 Stunde</option>
             <option value="2">2 Stunden</option>
@@ -71,80 +89,88 @@
             <option value="8" selected>8 Stunden</option>
             <option value="12">12 Stunden</option>
         </select>
-        <button onclick="startTimer()">Timer starten</button>
+        <button onclick="startTimer()">▶ Timer starten</button>
         <div class="timer" id="timerDisplay"></div>
     </div>
 
     <!-- Tägliche Checkliste -->
     <div class="section">
-        <h2>Tägliche Checkliste</h2>
+        <h2>✅ Tägliche Checkliste</h2>
         <div class="checklist-input">
             <input type="text" id="newTask" placeholder="Neue Aufgabe (z.B. Inhalieren)">
-            <button onclick="addTask()">Hinzufügen</button>
+            <button onclick="addTask()">➕ Hinzufügen</button>
         </div>
         <div id="tasksList"></div>
     </div>
 
     <!-- Symptom-Tracker -->
     <div class="section">
-        <h2>Symptome erfassen</h2>
-        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
-        <button onclick="addSymptom()">Symptom hinzufügen</button>
+        <h2>🌡 Symptome erfassen</h2>
+        <textarea id="symptomInput" placeholder="Symptome beschreiben (z.B. Fieber 38,6°C)..." rows="3"></textarea>
+        <button onclick="addSymptom()">📥 Symptom hinzufügen</button>
         <div id="symptomsList"></div>
     </div>
 
     <script>
-        // Initialisierung
         let timerId = null;
         let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-        // Beim Laden der Seite
+        // Initialisierung
         document.addEventListener('DOMContentLoaded', () => {
-            updateSymptomsList();
-            updateTasksList();
+            updateAll();
             if (localStorage.getItem('nextDose')) {
                 timerId = setInterval(updateTimerDisplay, 1000);
-                updateTimerDisplay();
             }
         });
+
+        function updateAll() {
+            updateSymptomsList();
+            updateTasksList();
+            updateTimerDisplay();
+        }
 
         // Timer-Funktionen
         function startTimer() {
             const medication = document.getElementById('medName').value.trim();
-            const intervalHours = parseInt(document.getElementById('interval').value);
+            const interval = document.getElementById('interval').value;
             
             if (!medication) {
-                alert('Bitte Medikamentenname eingeben');
+                alert('Bitte Medikamentennamen eingeben');
                 return;
             }
 
-            const nextDose = new Date(Date.now() + intervalHours * 3600000);
+            const nextDose = Date.now() + (parseInt(interval) * 3600000);
             
-            localStorage.setItem('nextDose', nextDose.toISOString());
+            localStorage.setItem('nextDose', nextDose);
             localStorage.setItem('medication', medication);
             
-            updateTimerDisplay();
             clearInterval(timerId);
             timerId = setInterval(updateTimerDisplay, 1000);
+            updateTimerDisplay();
         }
 
         function updateTimerDisplay() {
-            const nextDose = new Date(localStorage.getItem('nextDose'));
-            const now = new Date();
+            const nextDose = parseInt(localStorage.getItem('nextDose'));
+            if (!nextDose) return;
+
+            const now = Date.now();
             const diff = nextDose - now;
 
             if (diff <= 0) {
-                document.getElementById('timerDisplay').innerHTML = `⏰ Zeit für ${localStorage.getItem('medication')}!`;
+                document.getElementById('timerDisplay').innerHTML = 
+                    `⏰ <strong>Jetzt ${localStorage.getItem('medication')} geben!</strong>`;
                 clearInterval(timerId);
                 return;
             }
 
             const hours = Math.floor(diff / 3600000);
             const minutes = Math.floor((diff % 3600000) / 60000);
-            
+            const seconds = Math.floor((diff % 60000) / 1000);
+
             document.getElementById('timerDisplay').innerHTML = 
-                `Nächste Dosis ${localStorage.getItem('medication')} in: ${hours}h ${minutes}m`;
+                `⏳ Nächste Dosis <strong>${localStorage.getItem('medication')}</strong> in:<br>
+                ${hours}h ${minutes}m ${seconds}s`;
         }
 
         // Checklisten-Funktionen
@@ -154,11 +180,11 @@
             
             if (!description) return;
 
-            tasks.push({
+            tasks.unshift({
                 id: Date.now(),
                 description: description,
                 completed: false,
-                timestamp: new Date().toISOString()
+                timestamp: Date.now()
             });
             
             localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -167,12 +193,9 @@
         }
 
         function toggleTask(taskId) {
-            tasks = tasks.map(task => {
-                if (task.id === taskId) {
-                    return {...task, completed: !task.completed};
-                }
-                return task;
-            });
+            tasks = tasks.map(task => task.id === taskId ? 
+                {...task, completed: !task.completed} : task
+            );
             localStorage.setItem('tasks', JSON.stringify(tasks));
             updateTasksList();
         }
@@ -185,7 +208,10 @@
                            ${task.completed ? 'checked' : ''} 
                            onchange="toggleTask(${task.id})">
                     ${task.description}
-                    <small>${new Date(task.timestamp).toLocaleTimeString()}</small>
+                    <small>${new Date(task.timestamp).toLocaleTimeString('de-DE', {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                    })}</small>
                 </div>
             `).join('');
         }
@@ -195,12 +221,11 @@
             const description = document.getElementById('symptomInput').value.trim();
             if (!description) return;
 
-            const entry = {
-                date: new Date().toISOString(),
+            symptoms.unshift({
+                timestamp: Date.now(),
                 description: description
-            };
+            });
             
-            symptoms.push(entry);
             localStorage.setItem('symptoms', JSON.stringify(symptoms));
             updateSymptomsList();
             document.getElementById('symptomInput').value = '';
@@ -208,13 +233,21 @@
 
         function updateSymptomsList() {
             const list = document.getElementById('symptomsList');
-            list.innerHTML = symptoms.map((entry) => `
+            list.innerHTML = symptoms.map(entry => `
                 <div class="entry">
-                    <strong>${new Date(entry.date).toLocaleString()}</strong><br>
+                    <strong>${new Date(entry.timestamp).toLocaleString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</strong><br>
                     ${entry.description}
                 </div>
-            `).reverse().join('');
+            `).join('');
         }
     </script>
 </body>
 </html>
+
+       
