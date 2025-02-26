@@ -6,106 +6,126 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>Kindergesundheit Tracker</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            padding: 10px;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 15px;
             max-width: 800px;
             margin: 0 auto;
-            background: #f5f5f5;
+            background: #f9f9f9;
+            color: #333;
         }
         .section {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #d35400;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 8px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        select, button, input[type="text"], textarea {
-            margin: 5px 0;
-            padding: 12px;
-            width: 100%;
             font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
         }
         button {
-            background: #4CAF50;
+            background: #e67e22;
             color: white;
-            font-weight: bold;
-            transition: background 0.3s;
+            font-weight: 600;
+            border: none;
+            transition: background 0.2s;
         }
         button:active {
-            background: #45a049;
+            background: #d35400;
         }
-        .timer {
-            font-size: 1.5em;
-            color: #2c3e50;
-            margin: 20px 0;
+        .medication-entry {
+            background: #fff4e6;
             padding: 15px;
-            background: #e8f5e9;
-            border-radius: 6px;
-            text-align: center;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #e67e22;
         }
-        .entry, .task {
-            background-color: #fff;
+        .history {
+            margin-top: 20px;
+        }
+        .entry {
+            background: #f8f9fa;
             padding: 12px;
             margin: 10px 0;
             border-radius: 6px;
-            border: 1px solid #eee;
-            display: flex;
-            align-items: center;
+            line-height: 1.4;
         }
-        .task input[type="checkbox"] {
-            margin-right: 15px;
-            transform: scale(1.4);
+        .timer {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2em;
+            margin: 15px 0;
         }
-        .checklist-input {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        small {
-            color: #666;
-            margin-left: auto;
+        .timestamp {
+            color: #7f8c8d;
             font-size: 0.9em;
         }
-        @media (min-width: 600px) {
-            body { padding: 20px; }
-            .checklist-input { flex-wrap: nowrap; }
+        @media (min-width: 480px) {
+            .input-row {
+                display: flex;
+                gap: 10px;
+            }
+            .input-row > * {
+                flex: 1;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Medikamenten-Timer -->
+    <!-- Medikamenten-Tracker -->
     <div class="section">
-        <h2>⏱ Medikamenten-Timer</h2>
-        <input type="text" id="medName" placeholder="Medikamentenname (z.B. Ibuprofen)">
-        <select id="interval">
-            <option value="1">1 Stunde</option>
-            <option value="2">2 Stunden</option>
-            <option value="4">4 Stunden</option>
-            <option value="6">6 Stunden</option>
-            <option value="8" selected>8 Stunden</option>
-            <option value="12">12 Stunden</option>
-        </select>
-        <button onclick="startTimer()">▶ Timer starten</button>
-        <div class="timer" id="timerDisplay"></div>
-    </div>
-
-    <!-- Tägliche Checkliste -->
-    <div class="section">
-        <h2>✅ Tägliche Checkliste</h2>
-        <div class="checklist-input">
-            <input type="text" id="newTask" placeholder="Neue Aufgabe (z.B. Inhalieren)">
-            <button onclick="addTask()">➕ Hinzufügen</button>
+        <h2>💊 Medikamentenverwaltung</h2>
+        <div class="input-row">
+            <div class="input-group">
+                <input type="text" id="medName" placeholder="Medikament (z.B. Nurofen)">
+            </div>
+            <div class="input-group">
+                <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
+            </div>
         </div>
-        <div id="tasksList"></div>
+        
+        <div class="input-row">
+            <div class="input-group">
+                <input type="time" id="time" value="">
+            </div>
+            <div class="input-group">
+                <select id="interval">
+                    <option value="6">6 Stunden</option>
+                    <option value="8" selected>8 Stunden</option>
+                    <option value="12">12 Stunden</option>
+                    <option value="24">24 Stunden</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="logMedication()">➕ Medikation erfassen</button>
+        <div class="timer" id="timerDisplay"></div>
+        
+        <div class="history" id="medicationHistory"></div>
     </div>
 
     <!-- Symptom-Tracker -->
     <div class="section">
-        <h2>🌡 Symptome erfassen</h2>
+        <h2>🌡 Symptom-Tracker</h2>
         <textarea id="symptomInput" placeholder="Symptome beschreiben (z.B. Fieber 38,6°C)..." rows="3"></textarea>
         <button onclick="addSymptom()">📥 Symptom hinzufügen</button>
         <div id="symptomsList"></div>
@@ -114,109 +134,97 @@
     <script>
         let timerId = null;
         let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
-        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let medicationHistory = JSON.parse(localStorage.getItem('medicationHistory')) || [];
 
         // Initialisierung
         document.addEventListener('DOMContentLoaded', () => {
-            updateAll();
-            if (localStorage.getItem('nextDose')) {
-                timerId = setInterval(updateTimerDisplay, 1000);
-            }
+            updateSymptomsList();
+            updateMedicationHistory();
+            checkTimers();
         });
 
-        function updateAll() {
-            updateSymptomsList();
-            updateTasksList();
-            updateTimerDisplay();
-        }
-
-        // Timer-Funktionen
-        function startTimer() {
+        // Medikationsfunktionen
+        function logMedication() {
             const medication = document.getElementById('medName').value.trim();
-            const interval = document.getElementById('interval').value;
-            
-            if (!medication) {
-                alert('Bitte Medikamentennamen eingeben');
+            const dose = document.getElementById('dose').value.trim();
+            const time = document.getElementById('time').value;
+            const interval = parseInt(document.getElementById('interval').value);
+
+            if (!medication || !dose || !time) {
+                alert('Bitte alle Felder ausfüllen');
                 return;
             }
 
-            const nextDose = Date.now() + (parseInt(interval) * 3600000);
-            
-            localStorage.setItem('nextDose', nextDose);
-            localStorage.setItem('medication', medication);
-            
-            clearInterval(timerId);
-            timerId = setInterval(updateTimerDisplay, 1000);
-            updateTimerDisplay();
-        }
-
-        function updateTimerDisplay() {
-            const nextDose = parseInt(localStorage.getItem('nextDose'));
-            if (!nextDose) return;
-
-            const now = Date.now();
-            const diff = nextDose - now;
-
-            if (diff <= 0) {
-                document.getElementById('timerDisplay').innerHTML = 
-                    `⏰ <strong>Jetzt ${localStorage.getItem('medication')} geben!</strong>`;
-                clearInterval(timerId);
-                return;
-            }
-
-            const hours = Math.floor(diff / 3600000);
-            const minutes = Math.floor((diff % 3600000) / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-
-            document.getElementById('timerDisplay').innerHTML = 
-                `⏳ Nächste Dosis <strong>${localStorage.getItem('medication')}</strong> in:<br>
-                ${hours}h ${minutes}m ${seconds}s`;
-        }
-
-        // Checklisten-Funktionen
-        function addTask() {
-            const taskInput = document.getElementById('newTask');
-            const description = taskInput.value.trim();
-            
-            if (!description) return;
-
-            tasks.unshift({
-                id: Date.now(),
-                description: description,
-                completed: false,
-                timestamp: Date.now()
-            });
-            
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            updateTasksList();
-            taskInput.value = '';
-        }
-
-        function toggleTask(taskId) {
-            tasks = tasks.map(task => task.id === taskId ? 
-                {...task, completed: !task.completed} : task
+            const now = new Date();
+            const [hours, minutes] = time.split(':');
+            const administrationTime = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                hours,
+                minutes
             );
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            updateTasksList();
+
+            const entry = {
+                medication: medication,
+                dose: dose,
+                time: administrationTime.toISOString(),
+                interval: interval,
+                nextDose: new Date(administrationTime.getTime() + interval * 3600000).toISOString()
+            };
+
+            medicationHistory.push(entry);
+            localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
+            
+            updateMedicationHistory();
+            checkTimers();
+            clearInputs();
         }
 
-        function updateTasksList() {
-            const list = document.getElementById('tasksList');
-            list.innerHTML = tasks.map(task => `
-                <div class="task">
-                    <input type="checkbox" 
-                           ${task.completed ? 'checked' : ''} 
-                           onchange="toggleTask(${task.id})">
-                    ${task.description}
-                    <small>${new Date(task.timestamp).toLocaleTimeString('de-DE', {
-                        hour: '2-digit', 
+        function updateMedicationHistory() {
+            const historyDiv = document.getElementById('medicationHistory');
+            historyDiv.innerHTML = medicationHistory.map((entry, index) => `
+                <div class="medication-entry">
+                    <strong>${entry.medication}</strong><br>
+                    ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}<br>
+                    <span class="timestamp">Nächste Dosis: ${new Date(entry.nextDose).toLocaleString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
                         minute: '2-digit'
-                    })}</small>
+                    })}</span>
                 </div>
             `).join('');
         }
 
-        // Symptom-Funktionen
+        function checkTimers() {
+            clearInterval(timerId);
+            const nextEntry = medicationHistory[medicationHistory.length - 1];
+            if (!nextEntry) return;
+
+            timerId = setInterval(() => {
+                const now = new Date();
+                const nextDose = new Date(nextEntry.nextDose);
+                const diff = nextDose - now;
+
+                if (diff <= 0) {
+                    document.getElementById('timerDisplay').innerHTML = 
+                        `⏰ <strong>Zeit für ${nextEntry.medication}!</strong>`;
+                    return;
+                }
+
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+
+                document.getElementById('timerDisplay').innerHTML = 
+                    `⏳ Nächste Dosis <strong>${nextEntry.medication}</strong> in:<br>
+                    ${hours}h ${minutes}m ${seconds}s`;
+            }, 1000);
+        }
+
+        // Symptomfunktionen
         function addSymptom() {
             const description = document.getElementById('symptomInput').value.trim();
             if (!description) return;
@@ -245,6 +253,12 @@
                     ${entry.description}
                 </div>
             `).join('');
+        }
+
+        function clearInputs() {
+            document.getElementById('medName').value = '';
+            document.getElementById('dose').value = '';
+            document.getElementById('time').value = '';
         }
     </script>
 </body>
