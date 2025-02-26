@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <title>HealthTracker Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary-blue: #4BA4F2;
@@ -15,268 +16,190 @@
             --text-dark: #2C3E50;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* [Bestehende CSS-Stile hier einfügen] */
+
+        .swipe-container {
+            position: relative;
+            overflow: hidden;
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            padding: 20px;
-            background: var(--light-bg);
-            color: var(--text-dark);
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 0 auto;
+        .swipe-content {
+            transition: transform 0.3s;
         }
 
-        .section {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 2px solid var(--secondary-blue);
-        }
-
-        h2 {
-            color: var(--primary-blue);
-            margin-bottom: 20px;
-            font-size: 1.6em;
+        .delete-btn {
+            position: absolute;
+            right: -80px;
+            width: 80px;
+            height: 100%;
+            background: #ff4444;
+            color: white;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            transition: right 0.3s;
         }
 
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        select, input, textarea, button {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid var(--secondary-blue);
-            border-radius: 10px;
-            font-size: 16px;
-            margin: 8px 0;
-            background: white;
-            transition: all 0.3s ease;
-        }
-
-        select:focus, input:focus, textarea:focus {
-            border-color: var(--accent-green);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(4,217,79,0.1);
-        }
-
-        button {
-            background: var(--accent-green);
-            color: white;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #03C245;
-            transform: translateY(-1px);
-        }
-
-        .medication-entry, .symptom-entry {
-            background: rgba(220,234,242,0.3);
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 10px;
-            border-left: 4px solid var(--primary-blue);
-        }
-
-        .timer {
-            background: rgba(75,164,242,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
+        .day-section {
             margin: 20px 0;
-            font-size: 1.2em;
-        }
-
-        .med-selector {
             background: white;
             border-radius: 10px;
-            padding: 10px;
-            margin: 10px 0;
+            padding: 15px;
         }
 
-        .timestamp {
-            color: #7F8C8D;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 15px; }
-            .section { padding: 20px; }
+        .edit-btn {
+            background: var(--accent-yellow);
+            color: var(--text-dark);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- Medikamenten-Tracker -->
+    <!-- [Bestehende HTML-Struktur hier einfügen] -->
     <div class="section">
-        <h2>💊 Medikation</h2>
-        
-        <div class="med-selector">
-            <select id="medSelection">
-                <option value="">Medikament auswählen</option>
-                <option>Nurofen Sirup 100ml</option>
-                <option>Ibuprofen Flüssigkeit 200ml</option>
-                <option>Paracetamol Suspension 100ml</option>
-                <option>Nasentropfen 5ml</option>
-                <option>Hustensaft 120ml</option>
-                <option>Fiebersaft 150ml</option>
-                <option>Halstabletten 24St</option>
-                <option>Inhalationslösung 100ml</option>
-                <option>Homöopathische Globuli 10g</option>
-            </select>
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
-        </div>
-
-        <div class="input-row">
-            <div class="input-group">
-                <input type="time" id="time">
-            </div>
-            <div class="input-group">
-                <select id="interval">
-                    <option value="4">4 Stunden</option>
-                    <option value="6">6 Stunden</option>
-                    <option value="8" selected>8 Stunden</option>
-                    <option value="12">12 Stunden</option>
-                </select>
-            </div>
-        </div>
-
-        <button onclick="logMedication()">Medikation speichern</button>
-        <div class="timer" id="timerDisplay"></div>
-        <div id="medicationHistory"></div>
-    </div>
-
-    <!-- Symptom-Tracker -->
-    <div class="section">
-        <h2>🌡 Symptome</h2>
-        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
-        <button onclick="addSymptom()">Symptom erfassen</button>
-        <div id="symptomsList"></div>
+        <button onclick="exportPDF()" style="margin-top:20px;">📄 PDF Export</button>
     </div>
 
     <script>
-        let timerId = null;
-        let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
-        let medicationHistory = JSON.parse(localStorage.getItem('medicationHistory')) || [];
+        // [Bestehende JavaScript-Funktionen hier einfügen]
 
-        document.addEventListener('DOMContentLoaded', () => {
-            updateViews();
-            checkTimers();
-        });
+        // Neue Funktionen
+        function setupSwipe() {
+            let startX;
+            document.querySelectorAll('.swipe-container').forEach(container => {
+                let isDelete = false;
+                
+                container.addEventListener('touchstart', e => {
+                    startX = e.touches[0].clientX;
+                });
 
-        function updateViews() {
-            updateSymptoms();
-            updateMedHistory();
+                container.addEventListener('touchmove', e => {
+                    if (!startX) return;
+                    const diff = e.touches[0].clientX - startX;
+                    if (diff < -50 && !isDelete) {
+                        container.querySelector('.delete-btn').style.right = '0';
+                        isDelete = true;
+                    }
+                });
+
+                container.addEventListener('touchend', () => {
+                    startX = null;
+                    if (isDelete) {
+                        setTimeout(() => {
+                            const id = container.dataset.id;
+                            if (container.classList.contains('med-entry')) {
+                                medicationHistory = medicationHistory.filter(e => e.id != id);
+                                localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
+                            } else {
+                                symptoms = symptoms.filter(e => e.id != id);
+                                localStorage.setItem('symptoms', JSON.stringify(symptoms));
+                            }
+                            updateViews();
+                        }, 300);
+                    }
+                    isDelete = false;
+                });
+            });
         }
 
-        function logMedication() {
-            const med = document.getElementById('medSelection').value;
-            const dose = document.getElementById('dose').value.trim();
-            const time = document.getElementById('time').value;
-            const interval = parseInt(document.getElementById('interval').value);
+        function editEntry(type, id) {
+            const entry = type === 'med' 
+                ? medicationHistory.find(e => e.id === id)
+                : symptoms.find(e => e.id === id);
 
-            if (!med || !dose || !time) {
-                alert('Bitte alle Felder ausfüllen');
-                return;
+            const newVal = prompt('Bearbeiten:', type === 'med' 
+                ? `${entry.med} | ${entry.dose}`
+                : entry.desc);
+            
+            if (newVal) {
+                if (type === 'med') {
+                    const [med, dose] = newVal.split('|');
+                    entry.med = med.trim();
+                    entry.dose = dose.trim();
+                } else {
+                    entry.desc = newVal;
+                }
+                localStorage.setItem(type === 'med' ? 'medicationHistory' : 'symptoms', 
+                    JSON.stringify(type === 'med' ? medicationHistory : symptoms));
+                updateViews();
             }
-
-            const [hours, minutes] = time.split(':');
-            const adminTime = new Date();
-            adminTime.setHours(hours, minutes);
-
-            const entry = {
-                med: med,
-                dose: dose,
-                time: adminTime.toISOString(),
-                interval: interval,
-                nextDose: new Date(adminTime.getTime() + interval * 3600000)
-            };
-
-            medicationHistory.push(entry);
-            localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
-            updateViews();
-            checkTimers();
-            clearInputs();
         }
 
+        function exportPDF() {
+            const doc = new jspdf.jsPDF();
+            let yPos = 20;
+
+            // Medikationshistorie
+            doc.setFontSize(16);
+            doc.text('Medikationsprotokoll', 20, yPos);
+            yPos += 15;
+            
+            medicationHistory.forEach(entry => {
+                doc.setFontSize(12);
+                doc.text(`${new Date(entry.time).toLocaleDateString('de-DE')} - ${entry.med}: ${entry.dose}`, 20, yPos);
+                yPos += 10;
+            });
+
+            // Symptome
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.text('Symptomverlauf', 20, yPos);
+            yPos += 15;
+            
+            symptoms.forEach(entry => {
+                doc.setFontSize(12);
+                doc.text(`${new Date(entry.time).toLocaleDateString('de-DE')}: ${entry.desc}`, 20, yPos);
+                yPos += 10;
+            });
+
+            doc.save('Gesundheitsprotokoll.pdf');
+        }
+
+        // Update der Anzeigefunktionen
         function updateMedHistory() {
             const historyDiv = document.getElementById('medicationHistory');
             historyDiv.innerHTML = medicationHistory.map(entry => `
-                <div class="medication-entry">
-                    <strong>${entry.med}</strong><br>
-                    ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE')}<br>
-                    <span class="timestamp">Nächste Gabe: ${new Date(entry.nextDose).toLocaleString('de-DE')}</span>
+                <div class="swipe-container med-entry" data-id="${entry.id}">
+                    <div class="swipe-content">
+                        <div class="medication-entry">
+                            <strong>${entry.med}</strong>
+                            <button class="edit-btn" onclick="editEntry('med', '${entry.id}')">✎</button>
+                            <br>${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE')}
+                            <span class="timestamp">Nächste Gabe: ${new Date(entry.nextDose).toLocaleString('de-DE')}</span>
+                        </div>
+                    </div>
+                    <div class="delete-btn">Löschen</div>
                 </div>
             `).join('');
-        }
-
-        function checkTimers() {
-            clearInterval(timerId);
-            if (!medicationHistory.length) return;
-
-            const lastEntry = medicationHistory[medicationHistory.length - 1];
-            timerId = setInterval(() => {
-                const now = new Date();
-                const diff = lastEntry.nextDose - now;
-
-                if (diff <= 0) {
-                    document.getElementById('timerDisplay').innerHTML = 
-                        `⏰ <strong>${lastEntry.med} fällig!</strong>`;
-                    return;
-                }
-
-                const hours = Math.floor(diff / 3600000);
-                const minutes = Math.floor((diff % 3600000) / 60000);
-                document.getElementById('timerDisplay').innerHTML = 
-                    `⏳ Nächste Dosis in: ${hours}h ${minutes}m`;
-            }, 1000);
-        }
-
-        function addSymptom() {
-            const desc = document.getElementById('symptomInput').value.trim();
-            if (!desc) return;
-
-            symptoms.unshift({
-                time: new Date().toISOString(),
-                desc: desc
-            });
-
-            localStorage.setItem('symptoms', JSON.stringify(symptoms));
-            updateSymptoms();
-            document.getElementById('symptomInput').value = '';
+            setupSwipe();
         }
 
         function updateSymptoms() {
             const list = document.getElementById('symptomsList');
             list.innerHTML = symptoms.map(s => `
-                <div class="symptom-entry">
-                    <strong>${new Date(s.time).toLocaleString('de-DE')}</strong><br>
-                    ${s.desc}
+                <div class="swipe-container" data-id="${s.id}">
+                    <div class="swipe-content">
+                        <div class="symptom-entry">
+                            <strong>${new Date(s.time).toLocaleString('de-DE')}</strong>
+                            <button class="edit-btn" onclick="editEntry('symptom', '${s.id}')">✎</button>
+                            <br>${s.desc}
+                        </div>
+                    </div>
+                    <div class="delete-btn">Löschen</div>
                 </div>
             `).join('');
+            setupSwipe();
         }
 
-        function clearInputs() {
-            document.getElementById('medSelection').value = '';
-            document.getElementById('dose').value = '';
-            document.getElementById('time').value = '';
-        }
+        // Initialisierung mit IDs
+        document.addEventListener('DOMContentLoaded', () => {
+            medicationHistory = medicationHistory.map(e => ({...e, id: e.id || Date.now().toString()}));
+            symptoms = symptoms.map(e => ({...e, id: e.id || Date.now().toString()}));
+            updateViews();
+        });
     </script>
 </body>
 </html>
