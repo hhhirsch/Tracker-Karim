@@ -4,174 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Kindergesundheit Tracker</title>
+    <title>HealthTracker Pro</title>
     <style>
         :root {
-            --primary-dark: #042940;
-            --secondary-dark: #005C53;
-            --primary-accent: #9FC131;
-            --secondary-accent: #DBF227;
-            --light: #D6D58E;
+            --primary-blue: #4BA4F2;
+            --secondary-blue: #5CB9F2;
+            --light-bg: #DCEAF2;
+            --accent-green: #04D94F;
+            --accent-yellow: #F2B705;
+            --text-dark: #2C3E50;
         }
-        
+
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            padding: 15px;
+            padding: 20px;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
             max-width: 800px;
             margin: 0 auto;
-            background: var(--light);
-            color: var(--primary-dark);
-            line-height: 1.6;
         }
 
         .section {
-            margin-bottom: 25px;
-            padding: 20px;
-            border-radius: 10px;
             background: white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-            border: 1px solid var(--secondary-dark);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 2px solid var(--secondary-blue);
         }
 
         h2 {
-            color: var(--primary-dark);
-            margin: 0 0 20px 0;
-            font-size: 1.5em;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--secondary-accent);
+            color: var(--primary-blue);
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
-        input, select, textarea {
+        select, input, textarea, button {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 2px solid var(--secondary-dark);
-            border-radius: 8px;
+            padding: 14px;
+            border: 2px solid var(--secondary-blue);
+            border-radius: 10px;
             font-size: 16px;
+            margin: 8px 0;
             background: white;
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary-accent);
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--accent-green);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(159, 193, 49, 0.2);
+            box-shadow: 0 0 0 3px rgba(4,217,79,0.1);
         }
 
         button {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            background: var(--accent-green);
+            color: white;
             font-weight: 600;
-            background: var(--primary-accent);
-            color: var(--primary-dark);
+            border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
         button:hover {
-            background: var(--secondary-accent);
+            background: #03C245;
             transform: translateY(-1px);
         }
 
-        button:active {
-            transform: translateY(1px);
-        }
-
-        .medication-entry {
-            background: rgba(214, 213, 142, 0.15);
+        .medication-entry, .symptom-entry {
+            background: rgba(220,234,242,0.3);
             padding: 15px;
             margin: 15px 0;
-            border-radius: 8px;
-            border-left: 4px solid var(--secondary-dark);
-        }
-
-        .history {
-            margin-top: 25px;
-        }
-
-        .entry {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(4, 41, 64, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-blue);
         }
 
         .timer {
-            background: rgba(219, 242, 39, 0.15);
+            background: rgba(75,164,242,0.1);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             text-align: center;
-            font-size: 1.3em;
             margin: 20px 0;
-            border: 2px solid var(--primary-accent);
+            font-size: 1.2em;
+        }
+
+        .med-selector {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
         }
 
         .timestamp {
-            color: var(--secondary-dark);
+            color: #7F8C8D;
             font-size: 0.9em;
-            display: block;
-            margin-top: 8px;
+            margin-top: 5px;
         }
 
-        @media (min-width: 480px) {
-            .input-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                align-items: center;
-            }
+        @media (max-width: 480px) {
+            body { padding: 15px; }
+            .section { padding: 20px; }
         }
     </style>
 </head>
 <body>
     <!-- Medikamenten-Tracker -->
     <div class="section">
-        <h2>💊 Medikamentenverwaltung</h2>
-        <div class="input-row">
-            <div class="input-group">
-                <input type="text" id="medName" placeholder="Medikament">
-            </div>
-            <div class="input-group">
-                <input type="text" id="dose" placeholder="Dosis (ml)">
-            </div>
-        </div>
+        <h2>💊 Medikation</h2>
         
+        <div class="med-selector">
+            <select id="medSelection">
+                <option value="">Medikament auswählen</option>
+                <option>Nurofen Sirup 100ml</option>
+                <option>Ibuprofen Flüssigkeit 200ml</option>
+                <option>Paracetamol Suspension 100ml</option>
+                <option>Nasentropfen 5ml</option>
+                <option>Hustensaft 120ml</option>
+                <option>Fiebersaft 150ml</option>
+                <option>Halstabletten 24St</option>
+                <option>Inhalationslösung 100ml</option>
+                <option>Homöopathische Globuli 10g</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
+        </div>
+
         <div class="input-row">
             <div class="input-group">
                 <input type="time" id="time">
             </div>
             <div class="input-group">
                 <select id="interval">
+                    <option value="4">4 Stunden</option>
                     <option value="6">6 Stunden</option>
                     <option value="8" selected>8 Stunden</option>
                     <option value="12">12 Stunden</option>
                 </select>
             </div>
         </div>
-        
-        <button onclick="logMedication()">Medikation erfassen</button>
+
+        <button onclick="logMedication()">Medikation speichern</button>
         <div class="timer" id="timerDisplay"></div>
-        <div class="history" id="medicationHistory"></div>
+        <div id="medicationHistory"></div>
     </div>
 
     <!-- Symptom-Tracker -->
     <div class="section">
-        <h2>🌡 Symptom-Tracker</h2>
+        <h2>🌡 Symptome</h2>
         <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
-        <button onclick="addSymptom()">Symptom hinzufügen</button>
+        <button onclick="addSymptom()">Symptom erfassen</button>
         <div id="symptomsList"></div>
     </div>
 
@@ -180,132 +175,108 @@
         let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
         let medicationHistory = JSON.parse(localStorage.getItem('medicationHistory')) || [];
 
-        // Initialisierung
         document.addEventListener('DOMContentLoaded', () => {
-            updateSymptomsList();
-            updateMedicationHistory();
+            updateViews();
             checkTimers();
         });
 
-        // Medikationsfunktionen
+        function updateViews() {
+            updateSymptoms();
+            updateMedHistory();
+        }
+
         function logMedication() {
-            const medication = document.getElementById('medName').value.trim();
+            const med = document.getElementById('medSelection').value;
             const dose = document.getElementById('dose').value.trim();
             const time = document.getElementById('time').value;
             const interval = parseInt(document.getElementById('interval').value);
 
-            if (!medication || !dose || !time) {
+            if (!med || !dose || !time) {
                 alert('Bitte alle Felder ausfüllen');
                 return;
             }
 
-            const now = new Date();
             const [hours, minutes] = time.split(':');
-            const administrationTime = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-                hours,
-                minutes
-            );
+            const adminTime = new Date();
+            adminTime.setHours(hours, minutes);
 
             const entry = {
-                medication: medication,
+                med: med,
                 dose: dose,
-                time: administrationTime.toISOString(),
+                time: adminTime.toISOString(),
                 interval: interval,
-                nextDose: new Date(administrationTime.getTime() + interval * 3600000).toISOString()
+                nextDose: new Date(adminTime.getTime() + interval * 3600000)
             };
 
             medicationHistory.push(entry);
             localStorage.setItem('medicationHistory', JSON.stringify(medicationHistory));
-            
-            updateMedicationHistory();
+            updateViews();
             checkTimers();
             clearInputs();
         }
 
-        function updateMedicationHistory() {
+        function updateMedHistory() {
             const historyDiv = document.getElementById('medicationHistory');
-            historyDiv.innerHTML = medicationHistory.map((entry) => `
+            historyDiv.innerHTML = medicationHistory.map(entry => `
                 <div class="medication-entry">
-                    <strong>${entry.medication}</strong><br>
-                    ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}<br>
-                    <span class="timestamp">Nächste Dosis: ${new Date(entry.nextDose).toLocaleString('de-DE', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</span>
+                    <strong>${entry.med}</strong><br>
+                    ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE')}<br>
+                    <span class="timestamp">Nächste Gabe: ${new Date(entry.nextDose).toLocaleString('de-DE')}</span>
                 </div>
             `).join('');
         }
 
         function checkTimers() {
             clearInterval(timerId);
-            const nextEntry = medicationHistory[medicationHistory.length - 1];
-            if (!nextEntry) return;
+            if (!medicationHistory.length) return;
 
+            const lastEntry = medicationHistory[medicationHistory.length - 1];
             timerId = setInterval(() => {
                 const now = new Date();
-                const nextDose = new Date(nextEntry.nextDose);
-                const diff = nextDose - now;
+                const diff = lastEntry.nextDose - now;
 
                 if (diff <= 0) {
                     document.getElementById('timerDisplay').innerHTML = 
-                        `⏰ <strong>Zeit für ${nextEntry.medication}!</strong>`;
+                        `⏰ <strong>${lastEntry.med} fällig!</strong>`;
                     return;
                 }
 
                 const hours = Math.floor(diff / 3600000);
                 const minutes = Math.floor((diff % 3600000) / 60000);
-                const seconds = Math.floor((diff % 60000) / 1000);
-
                 document.getElementById('timerDisplay').innerHTML = 
-                    `⏳ Nächste Dosis <strong>${nextEntry.medication}</strong> in:<br>
-                    ${hours}h ${minutes}m ${seconds}s`;
+                    `⏳ Nächste Dosis in: ${hours}h ${minutes}m`;
             }, 1000);
         }
 
-        // Symptomfunktionen
         function addSymptom() {
-            const description = document.getElementById('symptomInput').value.trim();
-            if (!description) return;
+            const desc = document.getElementById('symptomInput').value.trim();
+            if (!desc) return;
 
             symptoms.unshift({
-                timestamp: Date.now(),
-                description: description
+                time: new Date().toISOString(),
+                desc: desc
             });
-            
+
             localStorage.setItem('symptoms', JSON.stringify(symptoms));
-            updateSymptomsList();
+            updateSymptoms();
             document.getElementById('symptomInput').value = '';
         }
 
-        function updateSymptomsList() {
+        function updateSymptoms() {
             const list = document.getElementById('symptomsList');
-            list.innerHTML = symptoms.map(entry => `
-                <div class="entry">
-                    <strong>${new Date(entry.timestamp).toLocaleString('de-DE', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</strong><br>
-                    ${entry.description}
+            list.innerHTML = symptoms.map(s => `
+                <div class="symptom-entry">
+                    <strong>${new Date(s.time).toLocaleString('de-DE')}</strong><br>
+                    ${s.desc}
                 </div>
             `).join('');
         }
 
         function clearInputs() {
-            document.getElementById('medName').value = '';
+            document.getElementById('medSelection').value = '';
             document.getElementById('dose').value = '';
             document.getElementById('time').value = '';
         }
     </script>
 </body>
 </html>
-
-       
