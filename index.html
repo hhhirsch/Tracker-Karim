@@ -18,7 +18,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        select, button, input[type="text"] {
+        select, button, input[type="text"], textarea {
             margin: 5px 0;
             padding: 10px;
             width: 95%;
@@ -54,11 +54,12 @@
         }
         @media (min-width: 600px) {
             body { padding: 20px; }
-            select, input[type="text"] { width: auto; }
+            select, input[type="text"], textarea { width: auto; }
         }
     </style>
 </head>
 <body>
+    <!-- Medikamenten-Timer -->
     <div class="section">
         <h2>Medikamenten-Timer</h2>
         <input type="text" id="medName" placeholder="Medikamentenname">
@@ -74,6 +75,7 @@
         <div class="timer" id="timerDisplay"></div>
     </div>
 
+    <!-- Tägliche Checkliste -->
     <div class="section">
         <h2>Tägliche Checkliste</h2>
         <div class="checklist-input">
@@ -83,21 +85,31 @@
         <div id="tasksList"></div>
     </div>
 
+    <!-- Symptom-Tracker -->
     <div class="section">
         <h2>Symptome erfassen</h2>
-        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3" cols="50"></textarea>
+        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
         <button onclick="addSymptom()">Symptom hinzufügen</button>
         <div id="symptomsList"></div>
     </div>
 
     <script>
+        // Initialisierung
         let timerId = null;
         let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-        
-        updateSymptomsList();
-        updateTasksList();
 
+        // Beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSymptomsList();
+            updateTasksList();
+            if (localStorage.getItem('nextDose')) {
+                timerId = setInterval(updateTimerDisplay, 1000);
+                updateTimerDisplay();
+            }
+        });
+
+        // Timer-Funktionen
         function startTimer() {
             const medication = document.getElementById('medName').value.trim();
             const intervalHours = parseInt(document.getElementById('interval').value);
@@ -109,15 +121,33 @@
 
             const nextDose = new Date(Date.now() + intervalHours * 3600000);
             
-            localStorage.setItem('nextDose', nextDose);
+            localStorage.setItem('nextDose', nextDose.toISOString());
             localStorage.setItem('medication', medication);
             
             updateTimerDisplay();
+            clearInterval(timerId);
             timerId = setInterval(updateTimerDisplay, 1000);
         }
 
-        // Timer-Funktionen bleiben wie vorher...
+        function updateTimerDisplay() {
+            const nextDose = new Date(localStorage.getItem('nextDose'));
+            const now = new Date();
+            const diff = nextDose - now;
 
+            if (diff <= 0) {
+                document.getElementById('timerDisplay').innerHTML = `⏰ Zeit für ${localStorage.getItem('medication')}!`;
+                clearInterval(timerId);
+                return;
+            }
+
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            
+            document.getElementById('timerDisplay').innerHTML = 
+                `Nächste Dosis ${localStorage.getItem('medication')} in: ${hours}h ${minutes}m`;
+        }
+
+        // Checklisten-Funktionen
         function addTask() {
             const taskInput = document.getElementById('newTask');
             const description = taskInput.value.trim();
@@ -127,7 +157,8 @@
             tasks.push({
                 id: Date.now(),
                 description: description,
-                completed: false
+                completed: false,
+                timestamp: new Date().toISOString()
             });
             
             localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -154,12 +185,36 @@
                            ${task.completed ? 'checked' : ''} 
                            onchange="toggleTask(${task.id})">
                     ${task.description}
+                    <small>${new Date(task.timestamp).toLocaleTimeString()}</small>
                 </div>
             `).join('');
         }
 
-        // Symptom-Funktionen bleiben wie vorher...
+        // Symptom-Funktionen
+        function addSymptom() {
+            const description = document.getElementById('symptomInput').value.trim();
+            if (!description) return;
 
+            const entry = {
+                date: new Date().toISOString(),
+                description: description
+            };
+            
+            symptoms.push(entry);
+            localStorage.setItem('symptoms', JSON.stringify(symptoms));
+            updateSymptomsList();
+            document.getElementById('symptomInput').value = '';
+        }
+
+        function updateSymptomsList() {
+            const list = document.getElementById('symptomsList');
+            list.innerHTML = symptoms.map((entry) => `
+                <div class="entry">
+                    <strong>${new Date(entry.date).toLocaleString()}</strong><br>
+                    ${entry.description}
+                </div>
+            `).reverse().join('');
+        }
     </script>
 </body>
 </html>
