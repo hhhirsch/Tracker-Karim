@@ -3,296 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>GesundheitsTracker</title>
+    <title>Gesundheitskalender</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root {
-            --primary: #4BA4F2;
-            --secondary: #5CB9F2;
-            --background: #DCEAF2;
-            --accent: #04D94F;
-            --text: #2C3E50;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background: var(--background);
-            color: var(--text);
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .section {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        h2 {
-            color: var(--primary);
-            margin-bottom: 15px;
-            font-size: 1.4em;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        input, select, textarea, button {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--secondary);
-            border-radius: 8px;
-            margin: 5px 0;
-            font-size: 16px;
-        }
-
-        button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #03C245;
-        }
-
-        .slider-container {
-            margin: 15px 0;
-        }
-
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 5px;
-            color: var(--text);
-        }
-
-        .entry {
-            background: rgba(220,234,242,0.3);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            position: relative;
-        }
-
-        .edit-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: var(--primary);
-            cursor: pointer;
-        }
-
-        .delete-btn {
-            background: #ff4444;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin-left: 10px;
-        }
+        :root{--primary:#4BA4F2;--secondary:#5CB9F2;--background:#DCEAF2;--accent:#04D94F;--text:#2C3E50;}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
+        body{background:var(--background);color:var(--text);padding:20px;}
+        .view{display:none;max-width:800px;margin:0 auto;}
+        .active-view{display:block;}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+        .calendar-day{padding:10px;border:1px solid var(--primary);border-radius:5px;text-align:center;}
+        .has-entries{background:var(--accent);color:white;}
+        .section{background:white;border-radius:15px;padding:20px;margin:15px 0;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+        input,select,textarea,button{width:100%;padding:10px;margin:5px 0;border:2px solid var(--secondary);border-radius:8px;}
+        button{background:var(--accent);color:white;border:none;cursor:pointer;}
+        .entry{position:relative;padding:10px;margin:10px 0;background:#f8f9fa;border-radius:8px;}
+        .delete-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:red;cursor:pointer;}
+        .slider-container{margin:15px 0;}
+        .slider-labels{display:flex;justify-content:space-between;}
     </style>
 </head>
 <body>
-    <!-- Medikamenten-Tracker -->
-    <div class="section">
-        <h2>💊 Medikation</h2>
-        <div class="input-group">
-            <input type="text" id="medName" placeholder="Medikamentenname">
-        </div>
-        <div class="input-group">
-            <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
-        </div>
-        <div class="input-row">
-            <div class="input-group">
-                <input type="time" id="time">
+    <div id="calendarView" class="active-view">
+        <div class="section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <button onclick="changeMonth(-1)">←</button>
+                <h2 id="currentMonth"></h2>
+                <button onclick="changeMonth(1)">→</button>
             </div>
-            <div class="input-group">
-                <select id="interval">
-                    <option value="6">6 Stunden</option>
-                    <option value="8" selected>8 Stunden</option>
-                    <option value="12">12 Stunden</option>
-                </select>
-            </div>
+            <div class="calendar-grid" id="calendar"></div>
         </div>
-        <button onclick="addMedication()">Medikation speichern</button>
-        <div id="medicationList"></div>
     </div>
 
-    <!-- Vitalparameter -->
-    <div class="section">
-        <h2>📊 Vitalparameter</h2>
-        <div class="slider-container">
-            <label>Aktivität:</label>
-            <input type="range" id="activity" min="0" max="2" step="1" value="1">
-            <div class="slider-labels">
-                <span>Niedrig</span>
-                <span>Mittel</span>
-                <span>Hoch</span>
-            </div>
-        </div>
-
-        <div class="slider-container">
-            <label>Appetit:</label>
-            <input type="range" id="appetite" min="0" max="2" step="1" value="1">
-            <div class="slider-labels">
-                <span>Niedrig</span>
-                <span>Mittel</span>
-                <span>Hoch</span>
-            </div>
-        </div>
-
-        <div class="slider-container">
-            <label>Flüssigkeitsaufnahme:</label>
-            <input type="range" id="hydration" min="0" max="2" step="1" value="1">
-            <div class="slider-labels">
-                <span>Niedrig</span>
-                <span>Mittel</span>
-                <span>Hoch</span>
-            </div>
-        </div>
-        <button onclick="saveVitals()">Parameter speichern</button>
-        <div id="vitalsList"></div>
-    </div>
-
-    <!-- Symptom-Tracker -->
-    <div class="section">
-        <h2>🌡 Symptome</h2>
-        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
-        <button onclick="addSymptom()">Symptom hinzufügen</button>
-        <div id="symptomsList"></div>
-    </div>
-
-    <!-- Export -->
-    <div class="section">
-        <button onclick="exportPDF()">📄 PDF Export</button>
-    </div>
-
-    <script>
-        let medications = JSON.parse(localStorage.getItem('medications')) || [];
-        let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
-        let vitals = JSON.parse(localStorage.getItem('vitals')) || [];
-
-        // Initialisierung
-        document.addEventListener('DOMContentLoaded', updateAll);
-
-        function updateAll() {
-            updateMedications();
-            updateSymptoms();
-            updateVitals();
-        }
-
-        // Medikationsfunktionen
-        function addMedication() {
-            const entry = {
-                id: Date.now(),
-                name: document.getElementById('medName').value.trim(),
-                dose: document.getElementById('dose').value.trim(),
-                time: new Date().toISOString(),
-                interval: parseInt(document.getElementById('interval').value)
-            };
-
-            medications.push(entry);
-            localStorage.setItem('medications', JSON.stringify(medications));
-            updateAll();
-            clearInputs();
-        }
-
-        function updateMedications() {
-            const list = document.getElementById('medicationList');
-            list.innerHTML = medications.map(entry => `
-                <div class="entry">
-                    <button class="edit-btn" onclick="editEntry('med', ${entry.id})">✎</button>
-                    <strong>${entry.name}</strong><br>
-                    ${entry.dose} - ${new Date(entry.time).toLocaleString('de-DE')}<br>
-                    <button class="delete-btn" onclick="deleteEntry('med', ${entry.id})">Löschen</button>
-                </div>
-            `).join('');
-        }
-
-        // Vitalparameterfunktionen
-        function saveVitals() {
-            const entry = {
-                id: Date.now(),
-                activity: document.getElementById('activity').value,
-                appetite: document.getElementById('appetite').value,
-                hydration: document.getElementById('hydration').value,
-                time: new Date().toISOString()
-            };
-
-            vitals.push(entry);
-            localStorage.setItem('vitals', JSON.stringify(vitals));
-            updateVitals();
-        }
-
-        function updateVitals() {
-            const list = document.getElementById('vitalsList');
-            list.innerHTML = vitals.map(entry => `
-                <div class="entry">
-                    <button class="edit-btn" onclick="editEntry('vital', ${entry.id})">✎</button>
-                    <strong>${new Date(entry.time).toLocaleString('de-DE')}</strong><br>
-                    Aktivität: ${getLevelText(entry.activity)}<br>
-                    Appetit: ${getLevelText(entry.appetite)}<br>
-                    Flüssigkeit: ${getLevelText(entry.hydration)}
-                    <button class="delete-btn" onclick="deleteEntry('vital', ${entry.id})">Löschen</button>
-                </div>
-            `).join('');
-        }
-
-        function getLevelText(value) {
-            return ['Niedrig', 'Mittel', 'Hoch'][value];
-        }
-
-        // Gemeinsame Funktionen
-        function deleteEntry(type, id) {
-            if (type === 'med') medications = medications.filter(e => e.id !== id);
-            if (type === 'vital') vitals = vitals.filter(e => e.id !== id);
-            if (type === 'symptom') symptoms = symptoms.filter(e => e.id !== id);
+    <div id="dayView" class="view">
+        <div class="section">
+            <button onclick="showView('calendarView')">← Zurück</button>
+            <h2 id="currentDay"></h2>
             
-            localStorage.setItem(type + 's', JSON.stringify(eval(type + 's')));
-            updateAll();
-        }
+            <h3>💊 Medikation</h3>
+            <input type="text" id="medName" placeholder="Medikament">
+            <input type="text" id="dose" placeholder="Dosis">
+            <input type="time" id="medTime">
+            <select id="interval">
+                <option value="4">4 Stunden</option>
+                <option value="6">6 Stunden</option>
+                <option value="8" selected>8 Stunden</option>
+            </select>
+            <button onclick="addMedication()">Hinzufügen</button>
+            <div id="medicationList"></div>
+            <div id="timer" class="section"></div>
+        </div>
 
-        function editEntry(type, id) {
-            const entry = eval(type + 's').find(e => e.id === id);
-            const newValue = prompt('Neuer Wert:', type === 'symptom' ? entry.desc : entry.name);
-            if (newValue) {
-                if (type === 'symptom') entry.desc = newValue;
-                else entry.name = newValue;
-                localStorage.setItem(type + 's', JSON.stringify(eval(type + 's')));
-                updateAll();
-            }
-        }
+        <div class="section">
+            <h3>📊 Vitalwerte</h3>
+            <div class="slider-container">
+                <label>Aktivität: <span id="activityValue">Mittel</span></label>
+                <input type="range" min="0" max="2" value="1" id="activity" oninput="updateSlider('activity')">
+                <div class="slider-labels"><span>Niedrig</span><span>Mittel</span><span>Hoch</span></div>
+            </div>
+            <!-- Wiederholen für Appetit/Flüssigkeit -->
+            <button onclick="saveVitals()">Speichern</button>
+            <div id="vitalsList"></div>
+        </div>
 
-        // PDF Export
-        function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // PDF-Inhalt hier ergänzen...
-            
-            doc.save('Gesundheitsreport.pdf');
-        }
+        <div class="section">
+            <h3>🌡 Symptome</h3>
+            <textarea id="symptomInput" rows="3"></textarea>
+            <button onclick="addSymptom()">Hinzufügen</button>
+            <div id="symptomsList"></div>
+        </div>
 
-        // Hilfsfunktionen
-        function clearInputs() {
-            document.getElementById('medName').value = '';
-            document.getElementById('dose').value = '';
+        <button onclick="exportPDF()" style="margin-top:20px;">📄 PDF Export</button>
+    </div>
+
+<script>
+let currentDate = new Date();
+let healthData = JSON.parse(localStorage.getItem('healthData')) || {};
+
+// Kalenderfunktionen
+function renderCalendar(date) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    document.getElementById('currentMonth').textContent = 
+        `${date.toLocaleString('de-DE', {month:'long', year:'numeric'})}`;
+
+    let calendarHTML = '';
+    for(let day = 1; day <= lastDay.getDate(); day++) {
+        const dayKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        calendarHTML += `<div class="calendar-day ${healthData[dayKey] ? 'has-entries' : ''}" 
+            onclick="showDay('${dayKey}')">${day}</div>`;
+    }
+    document.getElementById('calendar').innerHTML = calendarHTML;
+}
+
+// Datenverwaltung
+function saveData(dayKey, type, entry) {
+    if(!healthData[dayKey]) healthData[dayKey] = {meds:[], vitals:[], symptoms:[]};
+    healthData[dayKey][type].push({...entry, id:Date.now()});
+    localStorage.setItem('healthData', JSON.stringify(healthData));
+}
+
+// Timer-Logik
+function updateTimer(nextDose) {
+    const timer = setInterval(() => {
+        const diff = nextDose - Date.now();
+        if(diff < 0) {
+            document.getElementById('timer').innerHTML = '⏰ Medikation fällig!';
+            clearInterval(timer);
+            return;
         }
-    </script>
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        document.getElementById('timer').innerHTML = 
+            `Nächste Dosis in: ${hours}h ${minutes}m`;
+    }, 1000);
+}
+
+// Initialisierung
+document.addEventListener('DOMContentLoaded', () => {
+    renderCalendar(currentDate);
+    // Weitere Initialisierungen...
+});
+</script>
 </body>
 </html>
