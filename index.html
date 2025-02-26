@@ -1,32 +1,16 @@
-<!DOCTYPE html>
+​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gesundheitskalender</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        :root{--primary:#4BA4F2;--secondary:#5CB9F2;--background:#DCEAF2;--accent:#04D94F;--text:#2C3E50;}
-        *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
-        body{background:var(--background);color:var(--text);padding:20px;}
-        .view{display:none;max-width:800px;margin:0 auto;}
-        .active-view{display:block;}
-        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
-        .calendar-day{padding:10px;border:1px solid var(--primary);border-radius:5px;text-align:center;}
-        .has-entries{background:var(--accent);color:white;}
-        .section{background:white;border-radius:15px;padding:20px;margin:15px 0;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-        input,select,textarea,button{width:100%;padding:10px;margin:5px 0;border:2px solid var(--secondary);border-radius:8px;}
-        button{background:var(--accent);color:white;border:none;cursor:pointer;}
-        .entry{position:relative;padding:10px;margin:10px 0;background:#f8f9fa;border-radius:8px;}
-        .delete-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:red;cursor:pointer;}
-        .slider-container{margin:15px 0;}
-        .slider-labels{display:flex;justify-content:space-between;}
-    </style>
 </head>
 <body>
-    <div id="calendarView" class="active-view">
+    <!-- Kalenderansicht -->
+    <div id="calendarView" class="view active-view">
         <div class="section">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+            <div class="month-navigation">
                 <button onclick="changeMonth(-1)">←</button>
                 <h2 id="currentMonth"></h2>
                 <button onclick="changeMonth(1)">→</button>
@@ -35,14 +19,19 @@
         </div>
     </div>
 
+    <!-- Tagesansicht -->
     <div id="dayView" class="view">
         <div class="section">
-            <button onclick="showView('calendarView')">← Zurück</button>
-            <h2 id="currentDay"></h2>
+            <button onclick="showView('calendarView')">← Zurück zum Kalender</button>
+            <h2 id="currentDayHeader"></h2>
             
+            <!-- Medikation -->
             <h3>💊 Medikation</h3>
+            <label for="medName">Medikament:</label>
             <input type="text" id="medName" placeholder="Medikament">
-            <input type="text" id="dose" placeholder="Dosis">
+            <label for="dose">Dosis (z.B. 5ml):</label>
+            <input type="text" id="dose" placeholder="Dosis (z.B. 5ml)">
+            <label for="medTime">Zeit:</label>
             <input type="time" id="medTime">
             <select id="interval">
                 <option value="4">4 Stunden</option>
@@ -51,21 +40,30 @@
             </select>
             <button onclick="addMedication()">Hinzufügen</button>
             <div id="medicationList"></div>
-            <div id="timer" class="section"></div>
+            <div id="timer"></div>
         </div>
 
+        <!-- Vitalparameter -->
         <div class="section">
             <h3>📊 Vitalwerte</h3>
             <div class="slider-container">
                 <label>Aktivität: <span id="activityValue">Mittel</span></label>
-                <input type="range" min="0" max="2" value="1" id="activity" oninput="updateSlider('activity')">
+                <input type="range" min="0" max="2" value="1" id="activity" oninput="updateSlider('activity')" aria-label="Aktivitätslevel">
                 <div class="slider-labels"><span>Niedrig</span><span>Mittel</span><span>Hoch</span></div>
             </div>
-            <!-- Wiederholen für Appetit/Flüssigkeit -->
-            <button onclick="saveVitals()">Speichern</button>
-            <div id="vitalsList"></div>
+            <div class="slider-container">
+                <label>Appetit: <span id="appetiteValue">Mittel</span></label>
+                <input type="range" min="0" max="2" value="1" id="appetite" oninput="updateSlider('appetite')" aria-label="Appetit">
+                <div class="slider-labels"><span>Niedrig</span><span>Mittel</span><span>Hoch</span></div>
+            </div>
+            <div class="slider-container">
+                <label>Flüssigkeit: <span id="fluidValue">Mittel</span></label>
+                <input type="range" min="0" max="2" value="1" id="fluid" oninput="updateSlider('fluid')" aria-label="Flüssigkeitsaufnahme">
+                <div class="slider-labels"><span>Niedrig</span><span>Mittel</span><span>Hoch</span></div>
+            </div>
         </div>
 
+        <!-- Symptome -->
         <div class="section">
             <h3>🌡 Symptome</h3>
             <textarea id="symptomInput" rows="3"></textarea>
@@ -73,60 +71,301 @@
             <div id="symptomsList"></div>
         </div>
 
-        <button onclick="exportPDF()" style="margin-top:20px;">📄 PDF Export</button>
+        <button onclick="exportPDF()" class="export-btn">📄 PDF Export</button>
     </div>
-
-<script>
-let currentDate = new Date();
-let healthData = JSON.parse(localStorage.getItem('healthData')) || {};
-
-// Kalenderfunktionen
-function renderCalendar(date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    document.getElementById('currentMonth').textContent = 
-        `${date.toLocaleString('de-DE', {month:'long', year:'numeric'})}`;
-
-    let calendarHTML = '';
-    for(let day = 1; day <= lastDay.getDate(); day++) {
-        const dayKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        calendarHTML += `<div class="calendar-day ${healthData[dayKey] ? 'has-entries' : ''}" 
-            onclick="showDay('${dayKey}')">${day}</div>`;
-    }
-    document.getElementById('calendar').innerHTML = calendarHTML;
-}
-
-// Datenverwaltung
-function saveData(dayKey, type, entry) {
-    if(!healthData[dayKey]) healthData[dayKey] = {meds:[], vitals:[], symptoms:[]};
-    healthData[dayKey][type].push({...entry, id:Date.now()});
-    localStorage.setItem('healthData', JSON.stringify(healthData));
-}
-
-// Timer-Logik
-function updateTimer(nextDose) {
-    const timer = setInterval(() => {
-        const diff = nextDose - Date.now();
-        if(diff < 0) {
-            document.getElementById('timer').innerHTML = '⏰ Medikation fällig!';
-            clearInterval(timer);
-            return;
-        }
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        document.getElementById('timer').innerHTML = 
-            `Nächste Dosis in: ${hours}h ${minutes}m`;
-    }, 1000);
-}
-
-// Initialisierung
-document.addEventListener('DOMContentLoaded', () => {
-    renderCalendar(currentDate);
-    // Weitere Initialisierungen...
-});
-</script>
 </body>
 </html>
+
+<style>
+    :root {
+        --primary: #4BA4F2;
+        --secondary: #5CB9F2;
+        --background: #DCEAF2;
+        --accent: #04D94F;
+        --text: #2C3E50;
+    }
+
+    body {
+        background: var(--background);
+        color: var(--text);
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .view {
+        display: none;
+    }
+
+    .active-view {
+        display: block;
+    }
+
+    .section {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+        gap: 5px;
+        margin-top: 15px;
+    }
+
+    .calendar-day {
+        padding: 10px;
+        border: 1px solid var(--primary);
+        border-radius: 5px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .has-entries {
+        background: var(--accent);
+        color: white;
+        border: 2px solid var(--primary);
+    }
+
+    .today {
+        background: var(--secondary);
+        color: white;
+    }
+
+    button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px 0;
+    }
+
+    button:hover {
+        background: var(--secondary);
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+
+    .delete-btn {
+        background: #ff4444;
+        margin-left: 10px;
+    }
+</style>
+
+<script>
+    // Datenstruktur
+    let healthData = JSON.parse(localStorage.getItem('healthData')) || {};
+    let currentDate = new Date();
+    let currentDay;
+
+    // Kalenderfunktionen
+    function renderCalendar(date) {
+        const month = date.getMonth();
+        const year = date.getFullYear();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date().toISOString().split('T')[0];
+
+        document.getElementById('currentMonth').textContent = 
+            `${date.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}`;
+
+        let calendarHTML = '';
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isToday = dayKey === today;
+            calendarHTML += `
+                <div class="calendar-day ${healthData[dayKey] ? 'has-entries' : ''} ${isToday ? 'today' : ''}" 
+                     onclick="showDay('${dayKey}')">
+                    ${day}
+                </div>`;
+        }
+        document.getElementById('calendar').innerHTML = calendarHTML;
+    }
+
+    function changeMonth(offset) {
+        currentDate.setMonth(currentDate.getMonth() + offset);
+        renderCalendar(currentDate);
+    }
+
+    // Navigation
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        document.getElementById(viewId).classList.add('active-view');
+    }
+
+    function showDay(dayKey) {
+        currentDay = dayKey;
+        document.getElementById('currentDayHeader').textContent = 
+            new Date(dayKey).toLocaleDateString('de-DE');
+        showView('dayView');
+        loadDayData(dayKey);
+    }
+
+    // Datenverwaltung
+    function loadDayData(dayKey) {
+        const dayData = healthData[dayKey] || { medications: [], symptoms: [], vitals: {} };
+
+        // Medikamentenliste
+        const medList = document.getElementById('medicationList');
+        medList.innerHTML = dayData.medications.map(med => `
+            <div class="entry" data-id="${med.id}">
+                ${med.name} - ${med.dose} um ${med.time} (Intervall: ${med.interval}h)
+                <button class="delete-btn" onclick="deleteEntry('${dayKey}', 'medications', ${med.id})">Löschen</button>
+            </div>
+        `).join('');
+
+        // Vitalparameter
+        document.getElementById('activity').value = dayData.vitals.activity || 1;
+        updateSlider('activity');
+        document.getElementById('appetite').value = dayData.vitals.appetite || 1;
+        updateSlider('appetite');
+        document.getElementById('fluid').value = dayData.vitals.fluid || 1;
+        updateSlider('fluid');
+
+        // Symptome
+        const sympList = document.getElementById('symptomsList');
+        sympList.innerHTML = dayData.symptoms.map(sym => `
+            <div class="entry" data-id="${sym.id}">
+                ${sym.text}
+                <button class="delete-btn" onclick="deleteEntry('${dayKey}', 'symptoms', ${sym.id})">Löschen</button>
+            </div>
+        `).join('');
+
+        setupSwipe();
+    }
+
+    function addMedication() {
+        const name = document.getElementById('medName').value.trim();
+        const dose = document.getElementById('dose').value.trim();
+        const time = document.getElementById('medTime').value;
+        const interval = document.getElementById('interval').value;
+
+        if (!name || !dose || !time) {
+            alert('Bitte alle Felder ausfüllen!');
+            return;
+        }
+
+        const med = { id: Date.now(), name, dose, time, interval };
+        if (!healthData[currentDay]) healthData[currentDay] = { medications: [], symptoms: [], vitals: {} };
+        healthData[currentDay].medications.push(med);
+        localStorage.setItem('healthData', JSON.stringify(healthData));
+        document.getElementById('medName').value = '';
+        document.getElementById('dose').value = '';
+        document.getElementById('medTime').value = '';
+        loadDayData(currentDay);
+        alert('Medikament hinzugefügt!');
+    }
+
+    function addSymptom() {
+        const text = document.getElementById('symptomInput').value.trim();
+        if (!text) return;
+
+        const symptom = { id: Date.now(), text };
+        if (!healthData[currentDay]) healthData[currentDay] = { medications: [], symptoms: [], vitals: {} };
+        healthData[currentDay].symptoms.push(symptom);
+        localStorage.setItem('healthData', JSON.stringify(healthData));
+        document.getElementById('symptomInput').value = '';
+        loadDayData(currentDay);
+    }
+
+    function updateSlider(type) {
+        const slider = document.getElementById(type);
+        const valueSpan = document.getElementById(type + 'Value');
+        const values = ['Niedrig', 'Mittel', 'Hoch'];
+        valueSpan.textContent = values[slider.value];
+
+        if (!healthData[currentDay]) healthData[currentDay] = { medications: [], symptoms: [], vitals: {} };
+        healthData[currentDay].vitals[type] = slider.value;
+        localStorage.setItem('healthData', JSON.stringify(healthData));
+    }
+
+    function deleteEntry(dayKey, type, id) {
+        healthData[dayKey][type] = healthData[dayKey][type].filter(item => item.id !== id);
+        if (!healthData[dayKey].medications.length && !healthData[dayKey].symptoms.length && !Object.keys(healthData[dayKey].vitals).length) {
+            delete healthData[dayKey];
+        }
+        localStorage.setItem('healthData', JSON.stringify(healthData));
+        loadDayData(dayKey);
+    }
+
+    // Swipe-Handler
+    function setupSwipe() {
+        let startX;
+        document.querySelectorAll('.entry').forEach(entry => {
+            entry.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+            });
+
+            entry.addEventListener('touchend', e => {
+                const endX = e.changedTouches[0].clientX;
+                if (startX - endX > 50) {
+                    const dayKey = currentDay;
+                    const type = entry.parentElement.id === 'medicationList' ? 'medications' : 'symptoms';
+                    const id = Number(entry.dataset.id);
+                    deleteEntry(dayKey, type, id);
+                }
+            });
+        });
+    }
+
+    // PDF-Export
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let y = 20;
+
+        doc.setFontSize(16);
+        doc.text('Gesundheitsprotokoll', 20, y);
+        y += 10;
+
+        for (const dayKey in healthData) {
+            const dayData = healthData[dayKey];
+            doc.setFontSize(12);
+            doc.text(new Date(dayKey).toLocaleDateString('de-DE'), 20, y);
+            y += 10;
+
+            if (dayData.medications.length) {
+                doc.text('Medikation:', 25, y);
+                y += 5;
+                dayData.medications.forEach(med => {
+                    doc.text(`- ${med.name} (${med.dose}) um ${med.time}`, 30, y);
+                    y += 5;
+                });
+            }
+
+            if (dayData.vitals) {
+                doc.text('Vitalwerte:', 25, y);
+                y += 5;
+                const vitalsValues = ['Niedrig', 'Mittel', 'Hoch'];
+                doc.text(`- Aktivität: ${vitalsValues[dayData.vitals.activity || 1]}`, 30, y);
+                y += 5;
+                doc.text(`- Appetit: ${vitalsValues[dayData.vitals.appetite || 1]}`, 30, y);
+                y += 5;
+                doc.text(`- Flüssigkeit: ${vitalsValues[dayData.vitals.fluid || 1]}`, 30, y);
+                y += 5;
+            }
+
+            if (dayData.symptoms.length) {
+                doc.text('Symptome:', 25, y);
+                y += 5;
+                dayData.symptoms.forEach(sym => {
+                    doc.text(`- ${sym.text}`, 30, y);
+                    y += 5;
+                });
+            }
+        }
+
+        doc.save('protokoll.pdf');
+    }
+
+    // Initialisierung
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCalendar(currentDate);
+    });
+</script>
+​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
