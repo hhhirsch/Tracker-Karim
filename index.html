@@ -6,86 +6,132 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>Kindergesundheit Tracker</title>
     <style>
+        :root {
+            --primary-dark: #042940;
+            --secondary-dark: #005C53;
+            --primary-accent: #9FC131;
+            --secondary-accent: #DBF227;
+            --light: #D6D58E;
+        }
+        
         * {
             box-sizing: border-box;
         }
+        
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             padding: 15px;
             max-width: 800px;
             margin: 0 auto;
-            background: #f9f9f9;
-            color: #333;
+            background: var(--light);
+            color: var(--primary-dark);
+            line-height: 1.6;
         }
+
         .section {
             margin-bottom: 25px;
             padding: 20px;
             border-radius: 10px;
             background: white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+            border: 1px solid var(--secondary-dark);
         }
+
         h2 {
-            color: #d35400;
-            margin-top: 0;
-            font-size: 1.4em;
+            color: var(--primary-dark);
+            margin: 0 0 20px 0;
+            font-size: 1.5em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-accent);
         }
+
         .input-group {
             margin-bottom: 15px;
         }
-        input, select, textarea, button {
+
+        input, select, textarea {
             width: 100%;
             padding: 12px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
+            margin: 8px 0;
+            border: 2px solid var(--secondary-dark);
             border-radius: 8px;
             font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
         }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(159, 193, 49, 0.2);
+        }
+
         button {
-            background: #e67e22;
-            color: white;
-            font-weight: 600;
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
             border: none;
-            transition: background 0.2s;
-        }
-        button:active {
-            background: #d35400;
-        }
-        .medication-entry {
-            background: #fff4e6;
-            padding: 15px;
-            margin: 10px 0;
             border-radius: 8px;
-            border-left: 4px solid #e67e22;
+            font-size: 16px;
+            font-weight: 600;
+            background: var(--primary-accent);
+            color: var(--primary-dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .history {
-            margin-top: 20px;
+
+        button:hover {
+            background: var(--secondary-accent);
+            transform: translateY(-1px);
         }
-        .entry {
-            background: #f8f9fa;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 6px;
-            line-height: 1.4;
+
+        button:active {
+            transform: translateY(1px);
         }
-        .timer {
-            background: #e8f5e9;
+
+        .medication-entry {
+            background: rgba(214, 213, 142, 0.15);
             padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-dark);
+        }
+
+        .history {
+            margin-top: 25px;
+        }
+
+        .entry {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(4, 41, 64, 0.1);
+        }
+
+        .timer {
+            background: rgba(219, 242, 39, 0.15);
+            padding: 20px;
             border-radius: 8px;
             text-align: center;
-            font-size: 1.2em;
-            margin: 15px 0;
+            font-size: 1.3em;
+            margin: 20px 0;
+            border: 2px solid var(--primary-accent);
         }
+
         .timestamp {
-            color: #7f8c8d;
+            color: var(--secondary-dark);
             font-size: 0.9em;
+            display: block;
+            margin-top: 8px;
         }
+
         @media (min-width: 480px) {
             .input-row {
-                display: flex;
-                gap: 10px;
-            }
-            .input-row > * {
-                flex: 1;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                align-items: center;
             }
         }
     </style>
@@ -96,38 +142,36 @@
         <h2>💊 Medikamentenverwaltung</h2>
         <div class="input-row">
             <div class="input-group">
-                <input type="text" id="medName" placeholder="Medikament (z.B. Nurofen)">
+                <input type="text" id="medName" placeholder="Medikament">
             </div>
             <div class="input-group">
-                <input type="text" id="dose" placeholder="Dosis (z.B. 3,75 ml)">
+                <input type="text" id="dose" placeholder="Dosis (ml)">
             </div>
         </div>
         
         <div class="input-row">
             <div class="input-group">
-                <input type="time" id="time" value="">
+                <input type="time" id="time">
             </div>
             <div class="input-group">
                 <select id="interval">
                     <option value="6">6 Stunden</option>
                     <option value="8" selected>8 Stunden</option>
                     <option value="12">12 Stunden</option>
-                    <option value="24">24 Stunden</option>
                 </select>
             </div>
         </div>
         
-        <button onclick="logMedication()">➕ Medikation erfassen</button>
+        <button onclick="logMedication()">Medikation erfassen</button>
         <div class="timer" id="timerDisplay"></div>
-        
         <div class="history" id="medicationHistory"></div>
     </div>
 
     <!-- Symptom-Tracker -->
     <div class="section">
         <h2>🌡 Symptom-Tracker</h2>
-        <textarea id="symptomInput" placeholder="Symptome beschreiben (z.B. Fieber 38,6°C)..." rows="3"></textarea>
-        <button onclick="addSymptom()">📥 Symptom hinzufügen</button>
+        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3"></textarea>
+        <button onclick="addSymptom()">Symptom hinzufügen</button>
         <div id="symptomsList"></div>
     </div>
 
@@ -183,7 +227,7 @@
 
         function updateMedicationHistory() {
             const historyDiv = document.getElementById('medicationHistory');
-            historyDiv.innerHTML = medicationHistory.map((entry, index) => `
+            historyDiv.innerHTML = medicationHistory.map((entry) => `
                 <div class="medication-entry">
                     <strong>${entry.medication}</strong><br>
                     ${entry.dose} um ${new Date(entry.time).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}<br>
