@@ -29,6 +29,7 @@
             color: white;
             border: none;
             border-radius: 5px;
+            cursor: pointer;
         }
         .timer {
             font-size: 1.3em;
@@ -48,7 +49,91 @@
     </style>
 </head>
 <body>
-    <!-- Der restliche Code bleibt gleich wie im ursprünglichen Beispiel -->
-    <!-- [Hier den kompletten Body-Teil aus der vorherigen Antwort einfügen] -->
+    <div class="section">
+        <h2>Medikamenten-Timer</h2>
+        <input type="text" id="medName" placeholder="Medikamentenname">
+        <input type="number" id="interval" placeholder="Intervall in Stunden">
+        <button onclick="startTimer()">Timer starten</button>
+        <div class="timer" id="timerDisplay"></div>
+    </div>
+
+    <div class="section">
+        <h2>Symptome erfassen</h2>
+        <textarea id="symptomInput" placeholder="Symptome beschreiben..." rows="3" cols="50"></textarea>
+        <button onclick="addSymptom()">Symptom hinzufügen</button>
+        <div id="symptomsList"></div>
+    </div>
+
+    <script>
+        let timerId = null;
+        let symptoms = JSON.parse(localStorage.getItem('symptoms')) || [];
+        updateSymptomsList();
+
+        function startTimer() {
+            const medication = document.getElementById('medName').value;
+            const intervalHours = parseFloat(document.getElementById('interval').value);
+            
+            if (!medication || !intervalHours) {
+                alert('Bitte alle Felder ausfüllen');
+                return;
+            }
+
+            const nextDose = new Date(Date.now() + intervalHours * 3600000);
+            
+            localStorage.setItem('nextDose', nextDose);
+            localStorage.setItem('medication', medication);
+            
+            updateTimerDisplay();
+            timerId = setInterval(updateTimerDisplay, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const nextDose = new Date(localStorage.getItem('nextDose'));
+            const now = new Date();
+            const diff = nextDose - now;
+
+            if (diff <= 0) {
+                document.getElementById('timerDisplay').innerHTML = `⏰ Zeit für ${localStorage.getItem('medication')}!`;
+                clearInterval(timerId);
+                return;
+            }
+
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            
+            document.getElementById('timerDisplay').innerHTML = 
+                `Nächste Dosis ${localStorage.getItem('medication')} in: ${hours}h ${minutes}m`;
+        }
+
+        function addSymptom() {
+            const description = document.getElementById('symptomInput').value.trim();
+            if (!description) return;
+
+            const entry = {
+                date: new Date().toLocaleString(),
+                description: description
+            };
+            
+            symptoms.push(entry);
+            localStorage.setItem('symptoms', JSON.stringify(symptoms));
+            updateSymptomsList();
+            document.getElementById('symptomInput').value = '';
+        }
+
+        function updateSymptomsList() {
+            const list = document.getElementById('symptomsList');
+            list.innerHTML = symptoms.map((entry) => `
+                <div class="entry">
+                    <strong>${entry.date}</strong><br>
+                    ${entry.description}
+                </div>
+            `).join('');
+        }
+
+        if (localStorage.getItem('nextDose')) {
+            timerId = setInterval(updateTimerDisplay, 1000);
+            updateTimerDisplay();
+        }
+    </script>
 </body>
 </html>
