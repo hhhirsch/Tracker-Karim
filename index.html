@@ -279,23 +279,69 @@ input[type="range"]:focus {
         </div>
 
         <!-- Symptome -->
-        <div class="section">
-            <h3>🌡 Symptome</h3>
-            <textarea id="symptomInput" rows="3" placeholder="Symptome hier eingeben"></textarea>
-            <button onclick="addSymptom()" style="background-color: #4CAF50; color: white;">Hinzufügen</button>
-            <div id="symptomsList"></div>
-        </div>
-
-        <!-- Notizen -->
-        <div class="section">
-            <h3>📝 Notizen</h3>
-            <textarea id="dayNotes" rows="3" placeholder="Notizen zum Tag" onblur="saveNotes()"></textarea>
-        </div>
-
-        <button onclick="exportDay()" class="export-btn">📄 PDF Export (Tag)</button>
+     <!-- Symptome -->
+<div class="section">
+    <h3>🌡 Symptome</h3>
+    
+    <!-- Morgens -->
+    <h4>Morgens</h4>
+    <div class="slider-container">
+        <label>Bauchschmerzen: <span id="bauchschmerzenMorningValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="bauchschmerzenMorning" oninput="updateSymptomSlider('bauchschmerzen', 'morning')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Husten: <span id="hustenMorningValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="hustenMorning" oninput="updateSymptomSlider('husten', 'morning')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Fieber: <span id="fieberMorningValue">37.0</span> °C</label>
+        <input type="range" min="37.0" max="41.0" step="0.1" value="37.0" id="fieberMorning" oninput="updateSymptomSlider('fieber', 'morning')">
     </div>
 
-    <script>
+    <!-- Mittags -->
+    <h4>Mittags</h4>
+    <div class="slider-container">
+        <label>Bauchschmerzen: <span id="bauchschmerzenNoonValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="bauchschmerzenNoon" oninput="updateSymptomSlider('bauchschmerzen', 'noon')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Husten: <span id="hustenNoonValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="hustenNoon" oninput="updateSymptomSlider('husten', 'noon')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Fieber: <span id="fieberNoonValue">37.0</span> °C</label>
+        <input type="range" min="37.0" max="41.0" step="0.1" value="37.0" id="fieberNoon" oninput="updateSymptomSlider('fieber', 'noon')">
+    </div>
+
+    <!-- Abends -->
+    <h4>Abends</h4>
+    <div class="slider-container">
+        <label>Bauchschmerzen: <span id="bauchschmerzenEveningValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="bauchschmerzenEvening" oninput="updateSymptomSlider('bauchschmerzen', 'evening')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Husten: <span id="hustenEveningValue">Mittel</span></label>
+        <input type="range" min="0" max="2" step="1" value="1" id="hustenEvening" oninput="updateSymptomSlider('husten', 'evening')">
+        <div class="slider-labels"><span>Leicht</span><span>Mittel</span><span>Stark</span></div>
+    </div>
+    <div class="slider-container">
+        <label>Fieber: <span id="fieberEveningValue">37.0</span> °C</label>
+        <input type="range" min="37.0" max="41.0" step="0.1" value="37.0" id="fieberEvening" oninput="updateSymptomSlider('fieber', 'evening')">
+    </div>
+</div>
+
+
+
+<!-- Verlauf anzeigen -->
+<div class="section">
+    <h3>📈 Symptomverlauf</h3>
+    <div id="symptomHistory"></div>
+</div>
         // Datenstruktur
         let healthData = JSON.parse(localStorage.getItem('healthData')) || {};
         let currentDate = new Date();
@@ -653,6 +699,72 @@ input[type="range"]:focus {
 
             doc.save(`${currentDay}_tagesbericht.pdf`);
         }
+        
+        // Symptome laden
+function loadDayData(dayKey, disease) {
+    const dayData = healthData[disease]?.[dayKey] || { medications: [], symptoms: { morning: {}, noon: {}, evening: {} }, vitals: {}, notes: '' };
+
+    // Medikamentenliste und Vitalparameter (unverändert)
+    // ...
+
+    // Symptome laden
+    loadSymptoms(dayKey, disease);
+
+    // Notizen (unverändert)
+    // ...
+}
+// Hilfsfunktion: Erster Buchstabe groß
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Symptome speichern
+function updateSymptomSlider(symptom, time) {
+    const slider = document.getElementById(`${symptom}${capitalize(time)}`);
+    const valueSpan = document.getElementById(`${symptom}${capitalize(time)}Value`);
+    let value = slider.value;
+
+    if (symptom === 'fieber') {
+        valueSpan.textContent = value;
+    } else {
+        valueSpan.textContent = ['Leicht', 'Mittel', 'Stark'][value];
+    }
+
+    if (!healthData[currentDisease]) healthData[currentDisease] = {};
+    if (!healthData[currentDisease][currentDay]) healthData[currentDisease][currentDay] = { symptoms: { morning: {}, noon: {}, evening: {} } };
+    if (!healthData[currentDisease][currentDay].symptoms[time]) healthData[currentDisease][currentDay].symptoms[time] = {};
+
+    healthData[currentDisease][currentDay].symptoms[time][symptom] = symptom === 'fieber' ? parseFloat(value) : parseInt(value);
+    localStorage.setItem('healthData', JSON.stringify(healthData));
+
+    displaySymptomHistory(healthData[currentDisease][currentDay].symptoms);
+}
+
+// Verlauf anzeigen
+function displaySymptomHistory(symptoms) {
+    const historyDiv = document.getElementById('symptomHistory');
+    let html = '<h4>Verlauf des Tages</h4>';
+
+    const times = ['morning', 'noon', 'evening'];
+    times.forEach(time => {
+        if (symptoms[time] && (symptoms[time].bauchschmerzen !== undefined || symptoms[time].husten !== undefined || symptoms[time].fieber !== undefined)) {
+            html += `<p><strong>${capitalize(time)}:</strong></p>`;
+            html += `<ul>`;
+            if (symptoms[time].bauchschmerzen !== undefined) {
+                html += `<li>Bauchschmerzen: ${['Leicht', 'Mittel', 'Stark'][symptoms[time].bauchschmerzen]}</li>`;
+            }
+            if (symptoms[time].husten !== undefined) {
+                html += `<li>Husten: ${['Leicht', 'Mittel', 'Stark'][symptoms[time].husten]}</li>`;
+            }
+            if (symptoms[time].fieber !== undefined) {
+                html += `<li>Fieber: ${symptoms[time].fieber} °C</li>`;
+            }
+            html += `</ul>`;
+        }
+    });
+
+    historyDiv.innerHTML = html;
+}
 
         // Initialisierung
         document.addEventListener('DOMContentLoaded', () => {
