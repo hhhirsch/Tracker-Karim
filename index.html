@@ -701,23 +701,35 @@ input[type="range"]:focus {
         }
         
         // Symptome laden
-function loadDayData(dayKey, disease) {
-    const dayData = healthData[disease]?.[dayKey] || { medications: [], symptoms: { morning: {}, noon: {}, evening: {} }, vitals: {}, notes: '' };
-
-    // Medikamentenliste und Vitalparameter (unverändert)
-    // ...
-
-    // Symptome laden
-    loadSymptoms(dayKey, disease);
-
-    // Notizen (unverändert)
-    // ...
-}
 // Hilfsfunktion: Erster Buchstabe groß
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
+function loadSymptoms(dayKey, disease) {
+    const dayData = healthData[disease]?.[dayKey] || { symptoms: { morning: {}, noon: {}, evening: {} } };
+    const times = ['morning', 'noon', 'evening'];
+    const symptoms = ['bauchschmerzen', 'husten', 'fieber'];
 
+    times.forEach(time => {
+        symptoms.forEach(symptom => {
+            const value = dayData.symptoms[time]?.[symptom];
+            const slider = document.getElementById(`${symptom}${capitalize(time)}`);
+            const valueSpan = document.getElementById(`${symptom}${capitalize(time)}Value`);
+
+            if (slider && valueSpan) { // Sicherstellen, dass die Elemente existieren
+                if (symptom === 'fieber') {
+                    slider.value = value || 37.0; // Standardwert für Fieber
+                    valueSpan.textContent = slider.value;
+                } else {
+                    slider.value = value || 1; // Standardwert für andere Symptome
+                    valueSpan.textContent = ['Leicht', 'Mittel', 'Stark'][slider.value];
+                }
+            }
+        });
+    });
+
+    displaySymptomHistory(dayData.symptoms);
+}
 // Symptome speichern
 function updateSymptomSlider(symptom, time) {
     const slider = document.getElementById(`${symptom}${capitalize(time)}`);
